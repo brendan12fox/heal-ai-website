@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HEAL - AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes moveGlow {
+      0%, 100% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .animated-glow {
+      animation: moveGlow 10s ease-in-out infinite;
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 1s ease-out forwards;
+    }
+
+    @keyframes flipUp {
+      0% {
+        transform: rotateX(90deg);
+        opacity: 0;
+      }
+      100% {
+        transform: rotateX(0deg);
+        opacity: 1;
+      }
+    }
+
+    .flip-letter {
+      display: inline-block;
+      transform-origin: bottom;
+      animation: flipUp 1s ease-out forwards;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden opacity-0 animate-fadeIn">
+  <div class="absolute top-1/2 left-1/2 w-[1200px] h-[1200px] bg-blue-500/20 rounded-full blur-[200px] -z-10 transform -translate-x-1/2 -translate-y-1/2 animated-glow shadow-blue-400/30 shadow-xl"></div>
+
+  <div class="text-center mb-10">
+    <h1 class="text-5xl font-bold mb-2 tracking-tight text-center">
+      <span class="flip-letter" style="animation-delay: 0s;">H</span>
+      <span class="flip-letter" style="animation-delay: 0.1s;">E</span>
+      <span class="flip-letter" style="animation-delay: 0.2s;">A</span>
+      <span class="flip-letter" style="animation-delay: 0.3s;">L</span>
+      <span class="flip-letter" style="animation-delay: 0.4s;">-</span>
+      <span class="flip-letter" style="animation-delay: 0.5s;">A</span>
+      <span class="flip-letter" style="animation-delay: 0.6s;">I</span>
+    </h1>
+    <p class="text-lg text-blue-400 mt-2">Health Equity through Accessible Language & AI</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl w-full">
+    <a href="app1.html" class="bg-neutral-900 rounded-xl p-6 text-center shadow-lg hover:shadow-blue-500/40 hover:scale-105 transition-all duration-200 block">
+      <div class="text-2xl mb-2">🧠</div>
+      <h2 class="text-lg font-semibold mb-1">AI Instruction Translator</h2>
+      <p class="text-sm text-gray-400">Connects patients with local social resources via GPT</p>
+    </a>
+    <a href="app2.html" class="bg-neutral-900 rounded-xl p-6 text-center shadow-lg hover:shadow-blue-500/40 hover:scale-105 transition-all duration-200 block">
+	  <div class="text-2xl mb-2">📍</div>
+	  <h2 class="text-lg font-semibold mb-1">Patient Resource Guide</h2>
+	  <p class="text-sm text-gray-400">Find housing, food, and health services near you</p>
+	</a>
+  </div>
+</body>
+</html>

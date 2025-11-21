@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perioperative Note Translator | HEAL-AI</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container compact">
+        <a href="/" class="back-link">← Back to HEAL-AI Home</a>
+        
+        <div class="app-header">
+            <h1>📋 Perioperative Note Translator</h1>
+            <p>Multilingual, Literacy-Optimized Consent & Post-Op Instructions</p>
+        </div>
+
+        <form id="instructionForm" class="form-compact">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="instruction_type">Instruction Type</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="instruction_type" value="Post-Op" checked>
+                            Post-Op
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="instruction_type" value="Consent">
+                            Consent
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="language">Language</label>
+                    <select id="language" name="language" required>
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Bengali">Bengali</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reading_level">Reading Level</label>
+                <select id="reading_level" name="reading_level" required>
+                    <option value="Standard">Standard</option>
+                    <option value="High School">High School</option>
+                    <option value="5th Grade">5th Grade</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="procedure">Procedure</label>
+                <select id="procedure" name="procedure" required>
+                    <option value="Appendectomy">Appendectomy</option>
+                    <option value="Cholecystectomy">Cholecystectomy</option>
+                    <option value="Hernia Repair">Hernia Repair</option>
+                    <option value="Cesarean Section">Cesarean Section</option>
+                    <option value="Colonoscopy">Colonoscopy</option>
+                    <option value="Endoscopy">Endoscopy</option>
+                    <option value="Tonsillectomy">Tonsillectomy</option>
+                    <option value="Mastectomy">Mastectomy</option>
+                    <option value="Hysterectomy">Hysterectomy</option>
+                    <option value="Circumcision">Circumcision</option>
+                    <option value="Cataract Surgery">Cataract Surgery</option>
+                    <option value="Joint Replacement (Hip or Knee)">Joint Replacement (Hip or Knee)</option>
+                    <option value="Carpal Tunnel Release">Carpal Tunnel Release</option>
+                    <option value="Abscess Drainage">Abscess Drainage</option>
+                    <option value="Laparoscopic Gallbladder Removal">Laparoscopic Gallbladder Removal</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">Generate Instructions</button>
+        </form>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>Curating a medically equitable, patient-friendly document...</p>
+        </div>
+
+        <div id="results" class="results-card" style="display: none;"></div>
+        
+        <div id="pdfDownload" style="display: none; margin-top: 1rem; text-align: center;">
+            <button id="downloadBtn" class="btn btn-secondary">Download PDF</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('instructionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                instruction_type: document.querySelector('input[name="instruction_type"]:checked').value,
+                language: document.getElementById('language').value,
+                reading_level: document.getElementById('reading_level').value,
+                procedure: document.getElementById('procedure').value
+            };
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+            
+            results.style.display = 'none';
+            error.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/generate-instructions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const resultsContent = document.getElementById('results');
+                    resultsContent.innerHTML = formatText(data.result);
+                    resultsContent.style.display = 'block';
+                    
+                    const pdfDownload = document.getElementById('pdfDownload');
+                    if (pdfDownload) {
+                        pdfDownload.style.display = 'block';
+                    }
+                    // Store form data for PDF generation
+                    window.lastFormData = formData;
+                } else {
+                    error.textContent = 'Error: ' + data.error;
+                    error.style.display = 'block';
+                }
+            } catch (err) {
+                error.textContent = 'Error: ' + err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function formatText(text) {
+            // Convert markdown-style formatting to HTML
+            let html = String(text); // Ensure it's a string
+            
+            // FIRST: Convert markdown links [text](url) to HTML links - do this BEFORE other URL processing
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            
+            // Bold text: **text** or **text**
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Headers: # Header or ## Header
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+            
+            // Numbered lists: 1. item
+            html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<p><strong>$1.</strong> $2</p>');
+            
+            // Bullet points: - item or • item
+            html = html.replace(/^[-•]\s+(.+)$/gm, '<p>• $1</p>');
+            
+            // URLs: make clickable (http://, https://, www.) - but skip if already inside an <a> tag
+            // Use non-capturing groups to get correct parameter order
+            html = html.replace(/(?:https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi, (match, offset, fullString) => {
+                // Check if this URL is already inside an <a> tag by looking backwards
+                const before = String(fullString).substring(0, offset);
+                const lastOpenTag = before.lastIndexOf('<a');
+                const lastCloseTag = before.lastIndexOf('</a>');
+                
+                // If there's an open <a> tag without a closing tag before this URL, skip it
+                if (lastOpenTag !== -1 && (lastCloseTag === -1 || lastOpenTag > lastCloseTag)) {
+                    return match; // Already in a link, don't process
+                }
+                
+                let href = match;
+                if (!href.startsWith('http')) {
+                    href = 'https://' + href;
+                }
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+            });
+            
+            // Email addresses: make clickable (but not if already in a link)
+            html = html.replace(/(?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, (match, offset, fullString) => {
+                const before = String(fullString).substring(0, offset);
+                const lastOpenTag = before.lastIndexOf('<a');
+                const lastCloseTag = before.lastIndexOf('</a>');
+                if (lastOpenTag !== -1 && (lastCloseTag === -1 || lastOpenTag > lastCloseTag)) {
+                    return match;
+                }
+                return `<a href="mailto:${match}">${match}</a>`;
+            });
+            
+            // Phone numbers: make clickable (but not if already in a link)
+            html = html.replace(/(?:\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/g, (match, offset, fullString) => {
+                const before = String(fullString).substring(0, offset);
+                const lastOpenTag = before.lastIndexOf('<a');
+                const lastCloseTag = before.lastIndexOf('</a>');
+                if (lastOpenTag !== -1 && (lastCloseTag === -1 || lastOpenTag > lastCloseTag)) {
+                    return match;
+                }
+                return `<a href="tel:${match}">${match}</a>`;
+            });
+            
+            // Convert newlines to <br> for paragraphs
+            html = html.split('\n\n').map(para => {
+                if (para.trim() && !para.match(/^<[h|p]/)) {
+                    return '<p>' + para.trim().replace(/\n/g, '<br>') + '</p>';
+                }
+                return para;
+            }).join('');
+            
+            return html;
+        }
+
+        // PDF Download handler using event delegation
+        document.addEventListener('click', async (e) => {
+            if (e.target && e.target.id === 'downloadBtn') {
+                e.preventDefault();
+                if (!window.lastFormData) return;
+                
+                const btn = e.target;
+                btn.disabled = true;
+                btn.textContent = 'Generating PDF...';
+                
+                try {
+                    const response = await fetch('/api/generate-pdf', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(window.lastFormData)
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const contentDisposition = response.headers.get('Content-Disposition');
+                        const filename = contentDisposition ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') : 'instructions.pdf';
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    } else {
+                        const errorData = await response.json().catch(() => ({error: 'Unknown error'}));
+                        alert('Error generating PDF: ' + (errorData.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Download PDF';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
