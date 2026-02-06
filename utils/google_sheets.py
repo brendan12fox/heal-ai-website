@@ -105,7 +105,12 @@ def initialize_sheets():
 
 def log_resource_search(zip_code: str, category: str, language: str = "English"):
     """Log a resource finder search to Google Sheets (same format as old implementation)"""
-    if not LOGGING_ENABLED or not _search_sheet:
+    if not LOGGING_ENABLED:
+        print("⚠️  Logging disabled - GOOGLE_SERVICE_ACCOUNT_JSON not set")
+        return False
+    
+    if not _search_sheet:
+        print("⚠️  Search sheet not initialized")
         return False
     
     try:
@@ -113,9 +118,12 @@ def log_resource_search(zip_code: str, category: str, language: str = "English")
         # Adding language as 4th column for new data
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         _search_sheet.append_row([timestamp, zip_code, category, language])
+        print(f"✅ Logged search: {zip_code}, {category}, {language}")
         return True
     except Exception as e:
         print(f"⚠️  Error logging resource search: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
