@@ -1,6 +1,9 @@
 """
-Google Sheets logging utility - adapted from Streamlit version
-Logs to existing "Search_Log" sheet to preserve old data
+Google Sheets logging utility - adapted from Streamlit version.
+
+Important:
+- Opening spreadsheets by *name* is ambiguous if there are multiple files with the same title.
+- Prefer setting GOOGLE_SHEET_ID (spreadsheet ID from the URL) so logs always land in the correct sheet.
 """
 import os
 import json
@@ -51,25 +54,34 @@ def initialize_sheets():
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         _sheets_client = gspread.authorize(creds)
         
-        # Use the same sheet names as the old implementation
+        # Open the spreadsheet
+        # Prefer an explicit spreadsheet ID to avoid ambiguity when multiple files share the same name.
+        spreadsheet_id = os.getenv("GOOGLE_SHEET_ID")
+        spreadsheet_name = os.getenv("GOOGLE_SHEET_NAME", "Search_Log")
+
         try:
-            # Resource Finder logs to "Search_Log" (existing sheet with old data)
-            _search_sheet = _sheets_client.open("Search_Log").sheet1
-            print("✅ Connected to existing Search_Log sheet")
+            if spreadsheet_id:
+                spreadsheet = _sheets_client.open_by_key(spreadsheet_id)
+                print(f"✅ Connected to Google Sheet by ID: {spreadsheet_id}")
+            else:
+                spreadsheet = _sheets_client.open(spreadsheet_name)
+                print(f"✅ Connected to Google Sheet by name: {spreadsheet_name}")
+
+            # Resource Finder logs to the first tab (same behavior as old implementation)
+            _search_sheet = spreadsheet.sheet1
         except gspread.SpreadsheetNotFound:
-            print("⚠️  Google Sheet 'Search_Log' not found. Please create it and share with service account.")
+            print(f"⚠️  Google Sheet not found (name={spreadsheet_name}).")
+            print("⚠️  Tip: set GOOGLE_SHEET_ID to the spreadsheet ID from the URL to avoid name collisions.")
             return False
         
-        # Try to find or create Perioperative log sheet
+        # Try to find or create Perioperative log tab in the same spreadsheet
         try:
-            perioperative_spreadsheet = _sheets_client.open("Search_Log")
-            # Try to get a second sheet for perioperative, or use sheet1 if only one exists
-            all_sheets = perioperative_spreadsheet.worksheets()
+            all_sheets = spreadsheet.worksheets()
             if len(all_sheets) > 1:
                 _perioperative_sheet = all_sheets[1]  # Use second sheet/tab
             else:
                 # Create a new sheet/tab for perioperative logs
-                _perioperative_sheet = perioperative_spreadsheet.add_worksheet(
+                _perioperative_sheet = spreadsheet.add_worksheet(
                     title="Perioperative_Log",
                     rows=1000,
                     cols=10
