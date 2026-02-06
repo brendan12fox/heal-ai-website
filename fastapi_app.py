@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import uvicorn
 from utils.pdf_export import create_pdf_from_text
+from utils.google_sheets import log_resource_search, log_perioperative_usage
 
 load_dotenv()
 
@@ -87,6 +88,18 @@ Present results as a clean numbered list or table, readable for both patients an
             temperature=0.4
         )
         result = response.choices[0].message.content.strip()
+        
+        # Log to Google Sheets (non-blocking, same as old implementation)
+        try:
+            log_resource_search(
+                zip_code=request.zip_code,
+                category=request.category,
+                language=request.language
+            )
+        except Exception:
+            # Don't fail the request if logging fails
+            pass
+        
         return JSONResponse({"success": True, "result": result})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -128,6 +141,19 @@ async def generate_instructions(request: InstructionRequest):
             temperature=0.4
         )
         result = response.choices[0].message.content.strip()
+        
+        # Log to Google Sheets (non-blocking)
+        try:
+            log_perioperative_usage(
+                instruction_type=request.instruction_type,
+                language=request.language,
+                reading_level=request.reading_level,
+                procedure=request.procedure
+            )
+        except Exception:
+            # Don't fail the request if logging fails
+            pass
+        
         return JSONResponse({"success": True, "result": result})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -169,6 +195,18 @@ async def generate_pdf(request: InstructionRequest):
             temperature=0.4
         )
         result = response.choices[0].message.content.strip()
+        
+        # Log to Google Sheets (non-blocking) - PDF generation counts as usage too
+        try:
+            log_perioperative_usage(
+                instruction_type=request.instruction_type,
+                language=request.language,
+                reading_level=request.reading_level,
+                procedure=request.procedure
+            )
+        except Exception as log_error:
+            # Don't fail the request if logging fails
+            pass
         
         # Generate PDF
         title = f"{request.instruction_type} Instructions: {request.procedure}"

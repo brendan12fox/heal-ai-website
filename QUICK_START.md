@@ -53,3 +53,4 @@ The app will work without Google Sheets - it just won't log searches.
 
 Both apps should now have proper padding and spacing!
 
+
